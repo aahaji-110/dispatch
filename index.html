@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>كتيب الدسباتش - النسخة الاحترافية</title>
+    <style>
+        :root {
+            --bg-color: #0f1113;
+            --book-bg: #202225;
+            --page-bg: #2f3136;
+            --text-color: #ffffff;
+            --primary-color: #588157;
+            --accent-red: #ff4d4d;
+            --spine-color: #18191c;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            font-weight: 600;
+        }
+
+        .scene {
+            width: 95vw;
+            height: 90vh;
+            perspective: 3000px;
+            display: flex;
+            justify-content: flex-end; 
+            padding-right: 20px;
+        }
+
+        .book {
+            width: 45vw;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+
+        .page {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            right: 0;
+            transform-origin: right center;
+            transition: transform 1.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+            transform-style: preserve-3d;
+            box-shadow: inset -5px 0px 30px rgba(0,0,0,0.5);
+            border-radius: 15px 5px 5px 15px;
+            z-index: 1;
+        }
+
+        .page-front, .page-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            padding: 45px;
+            backface-visibility: hidden;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.05);
+            background: var(--page-bg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-back {
+            transform: rotateY(-180deg);
+            background: var(--book-bg);
+            border-radius: 5px 15px 15px 5px;
+        }
+
+        .page.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .spine {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 35px;
+            height: 100%;
+            background: var(--spine-color);
+            z-index: 100;
+            border-radius: 0 10px 10px 0;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.6);
+        }
+
+        /* أرقام الصفحات */
+        .page-number {
+            position: absolute;
+            bottom: 15px;
+            left: 20px;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            opacity: 0.7;
+        }
+        .page-back .page-number { left: auto; right: 20px; }
+
+        h2 { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; margin-top: 0; font-size: 2rem; }
+        .content { font-size: 1.3rem; line-height: 1.8; white-space: pre-line; flex-grow: 1; }
+        
+        .note-red { 
+            color: #ffffff; 
+            margin-top: 15px; 
+            padding: 15px; 
+            border: 2px solid var(--accent-red); 
+            border-radius: 12px; 
+            background: rgba(255, 77, 77, 0.15);
+            font-weight: 800;
+        }
+
+        .discord-block {
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Consolas', monospace;
+            margin: 10px 0;
+            font-size: 1.15rem;
+            border: 1px solid #333;
+        }
+
+        /* تنسيق الصور القابلة للتكبير */
+        .book-img {
+            width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 2px solid #555;
+            cursor: zoom-in;
+            transition: 0.3s;
+        }
+        .book-img:hover { border-color: var(--primary-color); }
+
+        /* نافذة التكبير (Modal) */
+        #imgModal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            justify-content: center;
+            align-items: center;
+        }
+        #imgModal img { max-width: 90%; max-height: 90%; border: 3px solid white; }
+        #imgModal .close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            display: flex;
+            gap: 20px;
+            z-index: 200;
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        }
+
+        .btn:disabled { background: #4f545c; opacity: 0.5; }
+
+        /* تنسيق الحقوق الجديد (هامش) */
+        .footer-rights {
+            margin-top: auto;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 15px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #888;
+        }
+        .footer-rights a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .footer-rights a:hover { text-decoration: underline; }
+
+    </style>
+</head>
+<body>
+
+<div id="imgModal">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <img id="modalImg">
+</div>
+
+<div class="scene">
+    <div class="book">
+        <div class="spine"></div>
+        
+        <div class="page" id="p1" style="z-index: 7;">
+            <div class="page-front" style="display:flex; flex-direction:column; justify-content:center; align-items:center; background: linear-gradient(135deg, #1e2b1e 0%, #2f3136 100%);">
+                <img src="https://www2.0zz0.com/2025/12/22/17/297618659.png" style="max-width: 200px; margin-bottom: 20px;">
+                <h1 style="color:var(--primary-color); font-size: 2.2rem; text-align: center;">كتيب تدريب وينق الدسباتش</h1>
+                <p>أكاديمية الصحة</p>
+                <div style="margin-top:30px; border:1px solid #666; padding:10px 20px; border-radius:30px;">اضغط على التالي للبدء ⬅️</div>
+                <div class="page-number">1</div>
+            </div>
+            <div class="page-back">
+                <h2>* تعريف الوينق</h2>
+                <div class="content">دوره تكثيفيه للبلاغات بشكل صحيح وكامل ليتخطى الشخص التوتر و الارتباك واختصار البلاغات لتسهل استلام الدسباتش لساعات طويله</div>
+                <div class="page-number">2</div>
+            </div>
+        </div>
+
+        <div class="page" id="p2" style="z-index: 6;">
+            <div class="page-front">
+                <h2>* قوانين الدسباتش</h2>
+                <div class="content" style="font-size: 1.1rem;">
+توزيع الوحدات على احتياج الميدان للوينقات والتوزيع الصحيح
+تعيين نائب دسباتش والحرص على وجوده بشكل مستمر من 20 الى 30 دقيقه
+صرف عموم الوحدات من المستشفى والتأكد من عدم وجود اي وحده بالمستشفى باستثناء 0-1 و قطاع الEMs
+تنظيم الراديو والجديه في ارسال البلاغات والحرص على عدم مقاطعة البلاغات
+عدم ذكر اي اسم بالراديو ويكون توجيه البلاغات باليونت فقط
+تعيين كوماندر والحرص على وجوده بشكل مستمر من 20 الى 30 دقيقه
+يمنع منعًا باتا مباشرة مسعفين مع بعض بدون اي سبب
+يجب عليك قبل توجيه شخص لحالة سرقة تاكد في حال حامل وينق (hc)
+يمنع منعًا باتا توجيه مدرب في حال كان مشرف شخص فقط توجه الشخص الي معاه
+                </div>
+                <div class="page-number">3</div>
+            </div>
+            <div class="page-back">
+                <h2>نائب الدسباتش</h2>
+                <div class="content">
+الرد البلاغات بعد خمس ثواني من عدم استجابة الدسباتش
+التركيز على بلاغات ال 997والرد عليها بشكل مباشر
+الرد على اتصالات
+
+<div class="note-red">ملاحظة : في حال خالفت احد القوانين يتم استدعائك عليها .</div>
+                </div>
+                <div class="page-number">4</div>
+            </div>
+        </div>
+
+        <div class="page" id="p3" style="z-index: 5;">
+            <div class="page-front">
+                <h2>تعليمات هامة</h2>
+                <div class="content" style="font-size:0.95rem;">
+* في حالات السرقات يجب عليك توجيه الاشخاص الحاملين وينق HC وفي حال عدم توفر احد حامل الوينق قم بتوجيه احد المسعفين.
+تهربك من استلام الديسباتش يعرضك للمحاسبة على بند 6-1 + سحب وينق الديسباتش.
+يمنع خروج الدسباتش من المستشفى الا في حالتين بعد اخذ اذن الكوماند وهي الذهاب للمطعم او الورشه كذلك مباشرة الميدان في حال عدم توفر عدد وحدات كافي
+عند توزيعك لوحدات ونق الايرشب يجب توجيه وحدات حاملين للونق كذلك عليك الالتزام بالعدد المسموح لك استخراجه وهو كالتالي:
+في حال وجود 4 وحدات او أقل : 1 ايرشب
+في حال وجود 5 وحدات : 2 ايرشب
+في حال وجود من 6 الى 10 وحدات : من 3الى 4 ايرشب
+في حال وجود 11 وحده الى 15: من 4 الى 5 ايرشب
+مع زيادة 5 وحدات يتم اضافة 2 ايرشب اخرى
+في حال احتياج الميدان اكثر من العدد المسموح يجب عليك اخذ اذن من مسؤول الفتره (Commander)
+
+<div class="note-red">ملاحظة : في حال خالفت احد القوانين يتم استدعائك عليها</div>
+                </div>
+                <div class="page-number">5</div>
+            </div>
+            <div class="page-back">
+                <h2>* تقرير الدسباتش</h2>
+                <div class="content" style="font-size:1rem;">
+عند استلامك للدسباتش يجب عليك رفع تقرير استلامك في دسكورد الاكاديمية في الروم المخصص له.
+<div class="discord-block">
+CO : كود مسؤول الفترة | DC : كود الدسباتش
+VIS : كود نائب الدسباتش
+Picture of EmsList: وضع صورة القائمة
+</div>
+مثال للتوضيح (اضغط للتكبير):
+<img src="file:///C:/Users/user/Desktop/dispatch/images/report.png" class="book-img" onclick="openModal(this.src)">
+                </div>
+                <div class="page-number">6</div>
+            </div>
+        </div>
+
+        <div class="page" id="p4" style="z-index: 4;">
+            <div class="page-front">
+                <h2>التوزيع الميداني</h2>
+                <div class="content" style="font-size:1rem;">
+عند توزيعك للوحدات في الميدان يجب ارسال التوزيع الميداني في دسكورد الاكاديمية.
+<div class="discord-block">
+E1 - H | E2 - H | E3 - A
+E4 - B | E5 - C | E6 - E
+E7 - AIR
+</div>
+حرف H بمعنى توجية الشخص داخل المستشفى (Hospital).
+مثال للتوضيح (اضغط للتكبير):
+<img src="file:///C:/Users/user/Desktop/dispatch/images/field.png" class="book-img" onclick="openModal(this.src)">
+                </div>
+                <div class="page-number">7</div>
+            </div>
+            <div class="page-back">
+                <div style="text-align:center; flex-grow:1; display:flex; flex-direction:column; justify-content:center;">
+                    <h1 style="color:var(--primary-color); margin:0;">Ministry of Health</h1>
+                    <div style="margin-top:20px; line-height:1.8;">
+                        <p>EMS Academy Commander: Rema Alkhaldi</p>
+                        <p>EMS Academy Deputy: Mohammed Abdullah</p>
+                        <p>Supervisor Of EMS Academy: Jory Walton</p>
+                        <p>ALL EMS FTO</p>
+                    </div>
+                </div>
+
+                <div class="footer-rights">
+                    الحقوق محفوظة لوزارة الصحة في سيرفر MT <br>
+                    اعداد نودي | برمجة وتطوير <a href="https://discord.com/users/YOUR_DISCORD_ID" target="_blank">Ali_go</a>
+                </div>
+                <div class="page-number">8</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="controls">
+    <button class="btn" id="prevBtn" onclick="prevPage()" disabled>السابق</button>
+    <button class="btn" id="nextBtn" onclick="nextPage()">التالي</button>
+</div>
+
+<script>
+    let currentLoc = parseInt(localStorage.getItem('book_page')) || 1;
+    let numOfPapers = 4;
+    let maxLoc = numOfPapers + 1;
+
+    // استعادة الصفحة عند التحميل
+    window.onload = function() {
+        for(let i = 1; i < currentLoc; i++) {
+            const page = document.getElementById(`p${i}`);
+            page.classList.add("flipped");
+            page.style.zIndex = i;
+        }
+        updateButtons();
+    };
+
+    function nextPage() {
+        if(currentLoc < maxLoc) {
+            const page = document.getElementById(`p${currentLoc}`);
+            page.classList.add("flipped");
+            page.style.zIndex = currentLoc;
+            currentLoc++;
+            savePage();
+            updateButtons();
+        }
+    }
+
+    function prevPage() {
+        if(currentLoc > 1) {
+            currentLoc--;
+            const page = document.getElementById(`p${currentLoc}`);
+            page.classList.remove("flipped");
+            page.style.zIndex = (numOfPapers - currentLoc) + 10;
+            savePage();
+            updateButtons();
+        }
+    }
+
+    function savePage() { localStorage.setItem('book_page', currentLoc); }
+
+    function updateButtons() {
+        document.getElementById('prevBtn').disabled = (currentLoc === 1);
+        document.getElementById('nextBtn').disabled = (currentLoc === maxLoc);
+    }
+
+    // دوال تكبير الصور
+    function openModal(src) {
+        document.getElementById("imgModal").style.display = "flex";
+        document.getElementById("modalImg").src = src;
+    }
+    function closeModal() {
+        document.getElementById("imgModal").style.display = "none";
+    }
+</script>
+
+</body>
+</html>
